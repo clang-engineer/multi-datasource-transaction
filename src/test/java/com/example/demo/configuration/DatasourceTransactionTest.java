@@ -25,11 +25,15 @@ public class DatasourceTransactionTest {
   @Qualifier("secondaryJdbcTemplate")
   private JdbcTemplate secondaryJdbcTemplate;
 
+  private String SELECT_COUNT_SQL = "SELECT COUNT(*) FROM test_table";
+
+  private String INSERT_SQL = "INSERT INTO TEST_TABLE VALUES (%d, 'test%d')";
+
   @Test
   @Transactional
   public void testPrimaryJdbcTemplate() {
-    primaryJdbcTemplate.execute("INSERT INTO test_table VALUES (1, 'test1')");
-    String query = "SELECT COUNT(*) FROM test_table";
+    primaryJdbcTemplate.execute(String.format(INSERT_SQL, 1, 1));
+    String query = SELECT_COUNT_SQL;
     int result = primaryJdbcTemplate.queryForObject(query, Integer.class);
     assertThat(result).isEqualTo(1);
   }
@@ -37,8 +41,8 @@ public class DatasourceTransactionTest {
   @Test
   @Transactional
   public void testSecondaryJdbcTemplate() {
-    secondaryJdbcTemplate.execute("INSERT INTO test_table VALUES (1, 'test1')");
-    String query = "SELECT COUNT(*) FROM test_table";
+    secondaryJdbcTemplate.execute(String.format(INSERT_SQL, 1, 1));
+    String query = SELECT_COUNT_SQL;
     int result = secondaryJdbcTemplate.queryForObject(query, Integer.class);
     assertThat(result).isEqualTo(1);
   }
@@ -47,15 +51,22 @@ public class DatasourceTransactionTest {
   @Transactional
   public void testTransactionRollback() {
     try {
-      primaryJdbcTemplate.update("INSERT INTO test_table (column1) VALUES (1, 'value1')");
-      secondaryJdbcTemplate.update("INSERT INTO test_table (column2) VALUES (2, 'value2')");
-
-      throw new RuntimeException("Rollback Test");
+      insertAndRollback();
     } catch (Exception e) {
-      assertThat(primaryJdbcTemplate.queryForObject("SELECT COUNT(*) FROM test_table", Integer.class))
+      assertThat(primaryJdbcTemplate.queryForObject(SELECT_COUNT_SQL, Integer.class))
           .isEqualTo(0);
-      assertThat(secondaryJdbcTemplate.queryForObject("SELECT COUNT(*) FROM test_table", Integer.class))
+      assertThat(secondaryJdbcTemplate.queryForObject(SELECT_COUNT_SQL, Integer.class))
           .isEqualTo(0);
+    }
+  }
+
+  @Transactional
+  protected void insertAndRollback() {
+    try {
+      primaryJdbcTemplate.execute(String.format(INSERT_SQL, 1, 1));
+      secondaryJdbcTemplate.execute(String.format(INSERT_SQL, 2, 2));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 }
