@@ -9,11 +9,11 @@ spring:
           xa-properties:
             user: sa
             password:
-            url: jdbc:h2:file:./build/h2db/db/testdb;DB_CLOSE_DELAY=-1
+            url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
         secondary:
           unique-resource-name: secondary
           xa-data-source-class-name: org.h2.jdbcx.JdbcDataSource
           xa-properties:
             user: sa
             password:
-            url: jdbc:h2:file:./build/h2db/db/testdb;DB_CLOSE_DELAY=-1
+            url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
