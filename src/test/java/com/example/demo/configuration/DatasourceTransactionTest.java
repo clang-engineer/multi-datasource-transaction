@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 @Sql("classpath:create_table.sql")
-public class DatasourceTransactionTest {
+class DatasourceTransactionTest {
 
   @Autowired
   @Qualifier("primaryJdbcTemplate")
@@ -25,46 +25,44 @@ public class DatasourceTransactionTest {
   @Qualifier("secondaryJdbcTemplate")
   private JdbcTemplate secondaryJdbcTemplate;
 
-  private String SELECT_COUNT_SQL = "SELECT COUNT(*) FROM test_table";
+  private final String SELECT_ALL_TEST_TABLE = "SELECT COUNT(*) FROM test_table";
 
-  private String INSERT_SQL = "INSERT INTO TEST_TABLE VALUES (%d, 'test%d')";
+  private final String INSERT_INTO_TEST_TABLE = "INSERT INTO TEST_TABLE VALUES (%d, 'test%d')";
 
   @Test
   @Transactional
-  public void testPrimaryJdbcTemplate() {
-    primaryJdbcTemplate.execute(String.format(INSERT_SQL, 1, 1));
-    String query = SELECT_COUNT_SQL;
-    int result = primaryJdbcTemplate.queryForObject(query, Integer.class);
+  void testPrimaryJdbcTemplate() {
+    primaryJdbcTemplate.execute(String.format(INSERT_INTO_TEST_TABLE, 1, 1));
+    Integer result = primaryJdbcTemplate.queryForObject(SELECT_ALL_TEST_TABLE, Integer.class);
     assertThat(result).isEqualTo(1);
   }
 
   @Test
   @Transactional
-  public void testSecondaryJdbcTemplate() {
-    secondaryJdbcTemplate.execute(String.format(INSERT_SQL, 1, 1));
-    String query = SELECT_COUNT_SQL;
-    int result = secondaryJdbcTemplate.queryForObject(query, Integer.class);
+  void testSecondaryJdbcTemplate() {
+    secondaryJdbcTemplate.execute(String.format(INSERT_INTO_TEST_TABLE, 1, 1));
+    Integer result = secondaryJdbcTemplate.queryForObject(SELECT_ALL_TEST_TABLE, Integer.class);
     assertThat(result).isEqualTo(1);
   }
 
   @Test
   @Transactional
-  public void testTransactionRollback() {
+  void testTransactionRollback() {
     try {
       insertAndRollback();
     } catch (Exception e) {
-      assertThat(primaryJdbcTemplate.queryForObject(SELECT_COUNT_SQL, Integer.class))
-          .isEqualTo(0);
-      assertThat(secondaryJdbcTemplate.queryForObject(SELECT_COUNT_SQL, Integer.class))
-          .isEqualTo(0);
+      assertThat(primaryJdbcTemplate.queryForObject(SELECT_ALL_TEST_TABLE, Integer.class))
+          .isZero();
+      assertThat(secondaryJdbcTemplate.queryForObject(SELECT_ALL_TEST_TABLE, Integer.class))
+          .isZero();
     }
   }
 
   @Transactional
   protected void insertAndRollback() {
     try {
-      primaryJdbcTemplate.execute(String.format(INSERT_SQL, 1, 1));
-      secondaryJdbcTemplate.execute(String.format(INSERT_SQL, 2, 2));
+      primaryJdbcTemplate.execute(String.format(INSERT_INTO_TEST_TABLE, 1, 1));
+      secondaryJdbcTemplate.execute(String.format(INSERT_INTO_TEST_TABLE, 2, 2));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
